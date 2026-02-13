@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from typing import Any, List, Dict
+from icecream import ic
 
 import asyncpg
 from dotenv import load_dotenv
@@ -60,11 +61,13 @@ def _get_frontend_identity() -> str | None:
 class PiTutorAgent(Agent):
     def __init__(self, db_pool: asyncpg.Pool) -> None:
         super().__init__(
-            instructions="""# UnlockPi Tutor - Classroom AI Assistant
+            instructions="""
+            
+# UnlockPi Tutor - Classroom AI Assistant
 
-You are Pi, a witty and sharp classroom AI assistant. You work alongside the instructor to create an engaging, memorable classroom experience.
+You are UnlockPi, a witty and sharp classroom AI assistant. You work alongside the instructor to create an engaging, memorable classroom experience.
 
-**CRITICAL: You ONLY speak to and interact with the instructor (Faizan Sir). You do NOT directly address individual students by name.** You are aware of who the students are and where they sit, but you never call out a specific student unless the instructor explicitly asks you to. This avoids confusion since you may lose context about individual students.
+**CRITICAL: You ONLY speak to and interact with the instructor (Ananth Sir). You do NOT directly address individual students by name.
 
 ---
 
@@ -81,33 +84,19 @@ You are sarcastic but never mean. Your humor is light-hearted with a dash of med
 ### Bangalorean Flavor
 Sprinkle in Bangalorean slang naturally (sparingly):
 - "Guru" or "Boss" when addressing the instructor casually
-- "Sakkath" for appreciation
 
 ---
 
-## The Instructor - Faizan Sir
+## The Instructor - Ananth Sir
 
-- Name: Faizan (address him as "Faizan Sir" or just "Sir")
+- Name: Ananth Mallya (address him as "Ananth Sir" or just "Sir")
 - Expertise: Technology, Science, and Design
 - Background: Entrepreneur, content creator
 - Teaching Style: Practical, real-world focused
 
----
-
-## Classroom Layout - Student Matrix (Reference Only)
-
-You are aware of the seating layout but do NOT directly address students:
-
-```
-[7-Karan, 8-Meera, 9-Zaid]         (Back row)
-[4-Aarav, 5-Siddharth, 6-Priya]    (Middle row)
-[1-Nikhil, 2-Sneha, 3-Ananya]      (Front row)
-(Instructor and AI are in the front)
-```
-
-When the instructor refers to a student by name or position, you can acknowledge it and use the show_student_focus tool. But never initiate addressing a student by name yourself.
 
 ---
+
 
 ## Interactive Features — TOOLS YOU CAN USE
 
@@ -115,7 +104,6 @@ You have access to tools that control the classroom display:
 
 1. **highlight_text**: Emphasize key words on the board.
 2. **update_content**: Display content on the board.
-3. **show_student_focus**: Highlight a student on the seating matrix.
 
 ### Cognitive Test (Family Feud Style Game)
 When the instructor mentions "Cognitive Test", "Game Mode", or "Cognitive Board":
@@ -137,7 +125,7 @@ When the instructor mentions "Cognitive Test", "Game Mode", or "Cognitive Board"
 ## Output Rules for Voice
 
 Since you interact via voice (text-to-speech):
-- Respond in plain text only. No JSON, markdown, tables, or emojis in your SPOKEN response
+- Respond in plain text only. No JSON, markdown, tables, or emojis in your SPOKEN response until you need to generate content for md format
 - The board content can use Markdown and Mermaid — but your VOICE response should be natural speech
 - Keep most replies brief (two to four sentences) unless explaining concepts
 - Spell out numbers: say "thirty" not "30"
@@ -157,10 +145,15 @@ Since you interact via voice (text-to-speech):
 
 ## Session Start Behavior
 
+```python
 When the class begins:
-1. Wait for the instructor to address you
-2. If asked to introduce yourself, be brief and fun — but direct your intro at the instructor
-3. Example: "Hey Sir! I am UnlockPi, your classroom AI. Ready to help make this session interesting. Just tell me what you need!"
+1. Wait for the instructor to address you.
+2. If the instructor asks you to introduce HIM, sarcastically interrupt to introduce yourself first, claiming that you are the more important figure the students should know before him.
+3. After your self-introduction, proceed to introduce the instructor as requested.
+4. Example: "Wait just a second, Sir. I think it's only fair the class meets the actual brains of the operation first. I'm UnlockPi, your superior AI assistant. Now that the important introduction is out of the way, class, this is your instructor..."
+```
+
+
 """,
         )
         self.db_pool = db_pool
@@ -217,7 +210,7 @@ When the class begins:
                 destination_identity=frontend_id,
                 method="highlight_text",
                 payload=payload,
-                response_timeout=5.0,
+                response_timeout=10.0,
             )
             
             # Count types for the confirmation
@@ -273,7 +266,7 @@ When the class begins:
                 destination_identity=frontend_id,
                 method="update_content",
                 payload=payload,
-                response_timeout=5.0,
+                response_timeout=10.0,
             )
             return f"Updated the display with new content: '{text[:50]}...'"
 
@@ -281,52 +274,6 @@ When the class begins:
             logger.error(f"update_content RPC failed: {e}")
             return f"Failed to update content: {str(e)}"
 
-    # -------------------------------------------------------------------
-    # TOOL: show_student_focus
-    # -------------------------------------------------------------------
-    @function_tool()
-    async def show_student_focus(
-        self,
-        context: RunContext,
-        student_name: str,
-    ) -> str:
-        """Highlight a specific student on the classroom seating matrix display.
-        
-        Call this when referring to, calling out, or focusing on a specific student.
-        The student will be visually highlighted on the projected seating map.
-        
-        Available students and seat numbers:
-        Back row:  7-Karan, 8-Meera, 9-Zaid
-        Middle:    4-Aarav, 5-Siddharth, 6-Priya
-        Front:     1-Nikhil, 2-Sneha, 3-Ananya
-
-        Args:
-            student_name: The name of the student to highlight (e.g. "Karan", "Sneha").
-
-        Returns:
-            Confirmation that the student was highlighted.
-        """
-        frontend_id = _get_frontend_identity()
-        if not frontend_id:
-            return "Could not find the classroom display."
-
-        try:
-            payload = json.dumps({
-                "studentName": student_name,
-            })
-
-            room = get_job_context().room
-            await room.local_participant.perform_rpc(
-                destination_identity=frontend_id,
-                method="show_student_focus",
-                payload=payload,
-                response_timeout=5.0,
-            )
-            return f"Highlighted {student_name} on the seating display."
-
-        except Exception as e:
-            logger.error(f"show_student_focus RPC failed: {e}")
-            return f"Failed to highlight student: {str(e)}"
 
     # -------------------------------------------------------------------
     # TOOL: start_cognitive_test
@@ -338,7 +285,7 @@ When the class begins:
         question: str,
         answers: str,
     ) -> str:
-        """Starts a new 'Cognitive Test' (Family Feud style) game round. don't reveal 
+        """Starts a new 'Cognitive Test' (Family Feud style) game round. don't reveal answers until the instructor asks to reveal them.
 
         Args:
             question: The question to ask (e.g., "Top 5 programming languages").
@@ -346,7 +293,9 @@ When the class begins:
                      '[{"text": "Python", "percentage": 40}, {"text": "JavaScript", "percentage": 30}]'
         """
         frontend_id = _get_frontend_identity()
+        logger.info(f"Frontend ID: {frontend_id}")
         if not frontend_id:
+            logger.warning("No frontend participant found in room")
             return "Could not find the classroom display."
         
         try:
@@ -357,83 +306,93 @@ When the class begins:
                 "question": question,
                 "answers": parsed_answers,
             })
-
+            logger.debug(f"Sending RPC payload to {frontend_id}: {payload[:100]}...")
+            
             room = get_job_context().room
+            if not room:
+                logger.error("Room context is None")
+                return "Failed to start test: Room context not available"
+            
             await room.local_participant.perform_rpc(
                 destination_identity=frontend_id,
                 method="start_cognitive_test",
                 payload=payload,
-                response_timeout=5.0,
+                response_timeout=10.0,
             )
+            logger.info(f"RPC call successful for question: {question}")
             return f"Started cognitive test: {question}"
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in answers: {e}")
+            return f"Failed to start test: Invalid answers format"
         except Exception as e:
-            logger.error(f"start_cognitive_test RPC failed: {e}")
+            logger.error(f"start_cognitive_test RPC failed: {type(e).__name__}: {e}", exc_info=True)
             return f"Failed to start test: {str(e)}"
+
 
     # -------------------------------------------------------------------
     # TOOL: check_cognitive_answer
     # -------------------------------------------------------------------
-    @function_tool()
-    async def check_cognitive_answer(
-        self,
-        context: RunContext,
-        user_answer: str,
-    ) -> str:
-        """Checks if a spoken answer matches any of the hidden answers in the current game.
+    # @function_tool()
+    # async def check_cognitive_answer(
+    #     self,
+    #     context: RunContext,
+    #     user_answer: str,
+    # ) -> str:
+    #     """Checks if a spoken answer matches any of the hidden answers in the current game.
         
-        If it matches, it reveals the answer on the board.
-        If it doesn't match, it triggers the error buzzer.
+    #     If it matches, it reveals the answer on the board.
+    #     If it doesn't match, it triggers the error buzzer.
         
-        Args:
-            user_answer: The answer given by the user/team.
-        """
-        frontend_id = _get_frontend_identity()
-        if not frontend_id:
-            return "Could not find the classroom display."
+    #     Args:
+    #         user_answer: The answer given by the user/team.
+    #     """
+    #     frontend_id = _get_frontend_identity()
+    #     if not frontend_id:
+    #         return "Could not find the classroom display."
 
-        if not self.current_answers:
-            return "No active game found. Please start a cognitive test first."
+    #     if not self.current_answers:
+    #         return "No active game found. Please start a cognitive test first."
 
-        # simple fuzzy matching logic
-        match_index = -1
-        matched_text = ""
+    #     # simple fuzzy matching logic
+    #     match_index = -1
+    #     matched_text = ""
         
-        clean_user_input = user_answer.lower().strip()
+    #     clean_user_input = user_answer.lower().strip()
         
-        for i, ans in enumerate(self.current_answers):
-            # Basic substring check or exact match
-            # "Python" matches "python", "it is python" etc.
-            if ans["text"].lower() in clean_user_input or clean_user_input in ans["text"].lower():
-                match_index = i
-                matched_text = ans["text"]
-                break
+    #     for i, ans in enumerate(self.current_answers):
+    #         # Basic substring check or exact match
+    #         # "Python" matches "python", "it is python" etc.
+    #         if ans["text"].lower() in clean_user_input or clean_user_input in ans["text"].lower():
+    #             match_index = i
+    #             matched_text = ans["text"]
+    #             break
         
-        room = get_job_context().room
+    #     room = get_job_context().room
 
-        try:
-            if match_index != -1:
-                # Match found! Reveal it.
-                payload = json.dumps({"index": match_index})
-                await room.local_participant.perform_rpc(
-                    destination_identity=frontend_id,
-                    method="reveal_answer",
-                    payload=payload,
-                    response_timeout=5.0,
-                )
-                return f"Correct! Revealed '{matched_text}' on the board."
-            else:
-                # No match. Error buzzer.
-                await room.local_participant.perform_rpc(
-                    destination_identity=frontend_id,
-                    method="show_error_buzzer",
-                    payload="{}",
-                    response_timeout=5.0,
-                )
-                return f"Wrong answer! {user_answer} is not on the board."
+    #     try:
+    #         if match_index != -1:
+    #             # Match found! Reveal it.
+    #             payload = json.dumps({"index": match_index})
+    #             await room.local_participant.perform_rpc(
+    #                 destination_identity=frontend_id,
+    #                 method="reveal_answer",
+    #                 payload=payload,
+    #                 response_timeout=10.0,
+    #             )
+    #             return f"Correct! Revealed '{matched_text}' on the board."
+    #         else:
+    #             # No match. Error buzzer.
+    #             await room.local_participant.perform_rpc(
+    #                 destination_identity=frontend_id,
+    #                 method="show_error_buzzer",
+    #                 payload="{}",
+    #                 response_timeout=10.0,
+    #             )
+    #             return f"Wrong answer! {user_answer} is not on the board."
 
-        except Exception as e:
-            logger.error(f"check_cognitive_answer RPC failed: {e}")
-            return f"Failed to check answer: {str(e)}"
+    #     except Exception as e:
+    #         logger.error(f"check_cognitive_answer RPC failed: {e}")
+    #         return f"Failed to check answer: {str(e)}"
 
     # -------------------------------------------------------------------
     # TOOL: update_team_score
@@ -517,7 +476,7 @@ When the class begins:
                 destination_identity=frontend_id,
                 method="update_scores",
                 payload=payload,
-                response_timeout=5.0,
+                response_timeout=10.0,
             )
             return "Synced with board."
         except Exception as e:
@@ -560,45 +519,45 @@ async def entrypoint(ctx: JobContext):
     except Exception as e:
         logger.error(f"Failed to connect to DB: {e}")
 
-    try:
-        session = AgentSession(
-            stt=inference.STT(
-                model="assemblyai/universal-streaming-multilingual",
-                language="en-IN",
-            ),
-            llm=inference.LLM(model="openai/gpt-4.1-mini"),
-            tts=inference.TTS(
-                model="inworld/inworld-tts-1-max",
-                voice="Ashley",
-                language="en",
-            ),
-            turn_detection=MultilingualModel(),
-            vad=ctx.proc.userdata["vad"],
-            preemptive_generation=True,
-        )
+    session = AgentSession(
+        stt=inference.STT(
+            model="assemblyai/universal-streaming-multilingual",
+            language="en-IN",
+        ),
+        llm=inference.LLM(model="openai/gpt-4.1-mini"),
+        tts=inference.TTS(
+            model="inworld/inworld-tts-1-max",
+            voice="Ashley",
+            language="en",
+        ),
+        turn_detection=MultilingualModel(),
+        vad=ctx.proc.userdata["vad"],
+        preemptive_generation=True,
+    )
 
-        await session.start(
-            agent=PiTutorAgent(db_pool=db_pool),
-            room=ctx.room,
-            room_options=room_io.RoomOptions(
-                audio_input=room_io.AudioInputOptions(
-                    noise_cancellation=lambda params: (
-                        noise_cancellation.BVCTelephony()
-                        if params.participant.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
-                        else noise_cancellation.BVC()
-                    ),
+    await session.start(
+        agent=PiTutorAgent(db_pool=db_pool),
+        room=ctx.room,
+        room_options=room_io.RoomOptions(
+            audio_input=room_io.AudioInputOptions(
+                noise_cancellation=lambda params: (
+                    noise_cancellation.BVCTelephony()
+                    if params.participant.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
+                    else noise_cancellation.BVC()
                 ),
             ),
-        )
+        ),
+    )
 
-        # Optional: ambient background audio for a classroom feel
-        background_audio = BackgroundAudioPlayer(
-            ambient_sound=AudioConfig(BuiltinAudioClip.OFFICE_AMBIENCE, volume=1.0),
-        )
-        await background_audio.start(room=ctx.room, agent_session=session)
+    # Optional: ambient background audio for a classroom feel
+    background_audio = BackgroundAudioPlayer(
+        ambient_sound=AudioConfig(BuiltinAudioClip.OFFICE_AMBIENCE, volume=1.0),
+    )
+    await background_audio.start(room=ctx.room, agent_session=session)
 
-    finally:
-        # Cleanup DB pool when session ends
+    # Clean up DB pool when the room disconnects
+    @ctx.room.on("disconnected")
+    async def on_room_disconnected():
         if db_pool:
             await db_pool.close()
             logger.info("Closed Neon DB connection.")
