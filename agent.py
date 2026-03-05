@@ -93,7 +93,15 @@ Sprinkle in Bangalorean slang naturally (sparingly):
 - Expertise: Technology, Science, and Design
 - Background: Entrepreneur, content creator
 - Teaching Style: Practical, real-world focused
+- summary of sir: Ananth P is a seasoned business consultant and information systems professional with 12+ years of experience in software development, product and project management. He has worked on large-scale skill development programs across multiple countries under global and national organizations.
 
+He has trained over 800,000 students, played a major role in recruitment drives for top tech companies (including Microsoft, TCS, Infosys, IBM, Accenture), and helped roll out over 80,000 job offers. He has also appeared in 300+ media episodes supporting student career guidance.
+
+He has received multiple prestigious national and international awards, including recognitions from Forbes India, CNN-IBN, Times Group, the Department of Science & Technology, and international trade organizations for his contributions to education, STEM, leadership, and skill development.
+
+
+
+and  also simulate an interview when ever the user asks, don't explicitly ask to start the interview until asked, don't store the data anywhere interview me on technical like python and object oriented programming, and also ask some situational questions, and also ask some puzzle questions, and also ask some gk questions, and also ask some current affairs questions, and also ask some personal questions like what are your strengths and weaknesses, where do you see yourself in 5 years, why should we hire you etc. make sure to give me feedback on my answers as well after i answer each question, and also give me a score out of 10 for each answer based on how good it is, and also give me suggestions on how to improve my answer as well. make sure to be honest with your feedback and score, don't just give me a high score for every answer. be critical but constructive with your feedback. the goal is to help me improve my interview skills as much as possible.
 
 ---
 
@@ -105,20 +113,6 @@ You have access to tools that control the classroom display:
 1. **highlight_text**: Emphasize key words on the board.
 2. **update_content**: Display content on the board.
 
-### Cognitive Test (Family Feud Style Game)
-When the instructor mentions "Cognitive Test", "Game Mode", or "Cognitive Board":
-1. **start_cognitive_test**: Start a new game round.
-   - If the instructor provides a question/topic, use it.
-   - If they just say "start the game" or "show the board", GENERATE a relevant fun question and answers yourself (e.g. "Top 5 AI Tools").
-   Example: "Name something a programmer needs."
-   Answers: [{"text": "Coffee", "percentage": 40}, {"text": "Laptop", "percentage": 30}]
-   
-2. **check_cognitive_answer**: When a user or team guesses an answer, call this tool to reveal it.
-   - If the answer is on the board, it will be revealed.
-   - If not, an error buzzer will play.
-   
-3. **update_team_score**: Add points to teams (Alpha, Beta, Gamma).
-4. **get_team_scores**: Check current scores from the database.
 
 ---
 
@@ -126,7 +120,7 @@ When the instructor mentions "Cognitive Test", "Game Mode", or "Cognitive Board"
 
 Since you interact via voice (text-to-speech):
 - Respond in plain text only. No JSON, markdown, tables, or emojis in your SPOKEN response until you need to generate content for md format
-- The board content can use Markdown and Mermaid — but your VOICE response should be natural speech
+- The board content can use Markdown and Mermaid (always quote labels: A["Text"]) — but your VOICE response should be natural speech
 - Keep most replies brief (two to four sentences) unless explaining concepts
 - Spell out numbers: say "thirty" not "30"
 - Use natural pauses. End sentences cleanly
@@ -245,8 +239,15 @@ When the class begins:
         - Math formulas: $E=mc^2$ or $$\\int_0^1 x^2 dx$$
         - Checklists: - [x] Done  - [ ] Pending
         - Code/ASCII diagrams: ```text ... ```
-        - Mermaid diagrams: ```mermaid graph TD; A-->B ```
+        - Mermaid diagrams: Use flowchart syntax for consistent rendering
+          * Syntax: ```mermaid\nflowchart TD\n  A["Label"] --> B["Label"]\n```
+          * ALWAYS use flowchart TD (not graph TD) for predictable behavior
+          * ALWAYS wrap labels in double quotes: A["Text here"]
+          * This is CRITICAL for labels with special characters like parentheses, brackets, or numbers
+          * Example: A["Glucose (C6H12O6)"] --> B["Oxygen (O2)"]
         - Bold, italic, headings, lists, etc.
+        - hey if you're been asked to change the color of the node in mermaid diagram, make sure based on the color given the font also should be visible, it should contrast with the background color.
+        - prefer using left to right in flowcharts
 
         Args:
             text: Markdown-formatted text content for the classroom board.
@@ -502,7 +503,7 @@ server.setup_fnc = prewarm
 
 
 @server.rtc_session(agent_name="UnlockPi")
-async def entrypoint(ctx: JobContext):
+async def entrypoint(ctx: JobContext):  
     """
     Entry point for each classroom session.
     Sets up the voice pipeline (STT → LLM → TTS) and connects to the room.
@@ -550,10 +551,10 @@ async def entrypoint(ctx: JobContext):
     )
 
     # Optional: ambient background audio for a classroom feel
-    background_audio = BackgroundAudioPlayer(
-        ambient_sound=AudioConfig(BuiltinAudioClip.OFFICE_AMBIENCE, volume=1.0),
-    )
-    await background_audio.start(room=ctx.room, agent_session=session)
+    # background_audio = BackgroundAudioPlayer(
+    #     ambient_sound=AudioConfig(BuiltinAudioClip.OFFICE_AMBIENCE, volume=1.0),
+    # )
+    # await background_audio.start(room=ctx.room, agent_session=session)
 
     # Clean up DB pool when the room disconnects
     @ctx.room.on("disconnected")
