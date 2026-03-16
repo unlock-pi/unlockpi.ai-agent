@@ -1,6 +1,15 @@
 from tools.display_tools import highlight_text, update_content
 from tools.game_tools import start_cognitive_test
 from tools.score_tools import update_team_score, get_team_scores
+from tools.board_tools import (
+    write_to_board,
+    update_board_line,
+    add_board_block,
+    highlight_board_line,
+    insert_board_line,
+    delete_board_line,
+    clear_board_content,
+)
 
 __all__ = [
     "highlight_text",
@@ -8,4 +17,11 @@ __all__ = [
     "start_cognitive_test",
     "update_team_score",
     "get_team_scores",
+    "write_to_board",
+    "update_board_line",
+    "add_board_block",
+    "highlight_board_line",
+    "insert_board_line",
+    "delete_board_line",
+    "clear_board_content",
 ]

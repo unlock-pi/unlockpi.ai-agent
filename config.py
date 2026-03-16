@@ -30,6 +30,7 @@ AGENT_NAME = "UnlockPi"
 @dataclass(frozen=True)
 class STTConfig:
     model: str = "assemblyai/universal-streaming-multilingual"
+    # model: str = "cartesia/ink-whisper"
     language: str = "en-IN"
 
 

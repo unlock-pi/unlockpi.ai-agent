@@ -1,10 +1,10 @@
 """
-InterviewAgent — Dr. Arya mock interview simulator.
+InterviewAgent — Dr. Kini mock interview simulator.
 
 Loads its system prompt from prompts/interview.md.
 Supports handoff back to PiTutorAgent when done.
 """
-# Conducts mechanical engineering interviews in Dr. Arya's persona.
+# Conducts interviews in Dr. Kini's persona.
 
 import os
 import logging
@@ -12,7 +12,7 @@ import logging
 from livekit.agents import Agent, RunContext, function_tool
 
 from config import PROMPTS_DIR
-from tools.display_tools import update_content
+from tools import update_content, write_to_board, clear_board_content
 
 logger = logging.getLogger("agent-UnlockPi")
 
@@ -25,10 +25,9 @@ def _load_prompt(filename: str) -> str:
 
 class InterviewAgent(Agent):
     """
-    Dr. Arya Interview Simulator.
-    interviews in the persona of Dr. Bheemsen Arya, Principal of BMSCE.
+    Dr. Kini Interview Simulator.
+    You take interview as Dr. Kini, a seasoned interviewer with a sharp eye for talent. 
     """
-    #   Conducts mock mechanical engineering
 
     def __init__(self, chat_ctx=None) -> None:
         # Lazy import to avoid circular dependency
@@ -37,19 +36,20 @@ class InterviewAgent(Agent):
         self._tutor_agent_cls = PiTutorAgent
 
         super().__init__(
-            instructions=_load_prompt("interview.md"),
+            instructions=_load_prompt("mit-interview.md"),
             chat_ctx=chat_ctx,
             tools=[
                 update_content,
+                write_to_board,
+                clear_board_content,
             ],
         )
 
     async def on_enter(self):
-        """Greet and set context when entering interview mode as Dr. Arya."""
+        """Greet and set context when entering interview mode as Dr. Kini."""
         await self.session.generate_reply(
             instructions=(
-                "Greet the candidate as Dr. Bheemsen Arya. "
-                # "Explain that you will conduct a mock mechanical engineering interview. "
+                "Greet the candidate as Dr. Kini, Your interviewer. "
                 "Remind them that industry hires skills, not degrees. "
                 "Ask if they are ready to begin."
             ),
@@ -58,5 +58,5 @@ class InterviewAgent(Agent):
 
     @function_tool()
     async def transfer_to_tutor(self, context: RunContext):
-        """End the interview and return to classroom mode."""
+        """Transfer back to tutor mode when the user wants to stop the interview, end practice, go back, exit interview, or return to the main conversation."""
         return self._tutor_agent_cls(chat_ctx=self.chat_ctx)

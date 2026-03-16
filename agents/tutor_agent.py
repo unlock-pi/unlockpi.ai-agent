@@ -18,6 +18,13 @@ from tools import (
     start_cognitive_test,
     update_team_score,
     get_team_scores,
+    write_to_board,
+    update_board_line,
+    add_board_block,
+    highlight_board_line,
+    insert_board_line,
+    delete_board_line,
+    clear_board_content,
 )
 
 logger = logging.getLogger("agent-UnlockPi")
@@ -44,11 +51,18 @@ class PiTutorAgent(Agent):
         self._interview_agent_cls = InterviewAgent
 
         super().__init__(
-            instructions=_load_prompt("bmsce-tutor.md"),
+            instructions=_load_prompt("mit-tutor.md"),
             chat_ctx=chat_ctx,
             tools=[
                 highlight_text,
                 update_content,
+                write_to_board,
+                update_board_line,
+                add_board_block,
+                highlight_board_line,
+                insert_board_line,
+                delete_board_line,
+                clear_board_content,
                 # start_cognitive_test,
                 # update_team_score,
                 # get_team_scores,

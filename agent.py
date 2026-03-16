@@ -10,9 +10,10 @@ This is the slim orchestration layer.  All business logic lives in:
 """
 
 import logging
-
+from livekit.agents import llm, stt, tts
 from livekit import rtc
 from livekit.agents import (
+    APIConnectOptions,
     AgentSession,
     AgentServer,
     JobContext,
@@ -62,6 +63,11 @@ async def entrypoint(ctx: JobContext):
         stt=inference.STT(
             model=models.stt.model,
             language=models.stt.language,
+            conn_options=APIConnectOptions(
+                max_retry=8,
+                retry_interval=2.0,
+                timeout=15.0,
+            ),
         ),
         llm=inference.LLM(model=models.llm.model),
         tts=inference.TTS(
@@ -70,6 +76,24 @@ async def entrypoint(ctx: JobContext):
             language=models.tts.language,
             
         ),
+    #       llm=llm.FallbackAdapter(
+    #     [
+    #         "openai/gpt-4.1-mini",
+    #         "google/gemini-2.5-flash",
+    #     ]
+    # ),
+    # stt=stt.FallbackAdapter(
+    #     [
+    #         "deepgram/nova-3",
+    #         "assemblyai/universal-streaming"
+    #     ]
+    # ),
+    # tts=tts.FallbackAdapter(
+    #     [
+    #         "cartesia/sonic-2:a167e0f3-df7e-4d52-a9c3-f949145efdab",
+    #         "inworld/inworld-tts-1",
+    #     ]
+    # ),
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
         preemptive_generation=True,

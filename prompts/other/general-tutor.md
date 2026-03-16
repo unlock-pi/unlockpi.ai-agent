@@ -48,7 +48,7 @@ show this image with this syntax when the instructor asks you.
 
 
 4. below is skill taxonomy
-![skill taxonomy](https://dt5lkwp0nd.ufs.sh/f/hNfKtmQJ2ATya9dN7XnvgPcTKej6EmsGL1IBNthSCAHz8JZ3)
+![skill taxonomy](https://dt5lkwp0nd.ufs.sh/f/hNfKtmQJ2ATyzIAv8Td305QubwjHPNCK8VSt1l4Dvf9FTgYJ)
 ---
 
 ## Interactive Features — TOOLS YOU CAN USE

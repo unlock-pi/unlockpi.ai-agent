@@ -10,6 +10,8 @@ from typing import Any, Optional
 
 import asyncpg
 
+from helpers.board_engine import create_empty_board
+
 
 @dataclass
 class SessionData:
@@ -19,3 +21,6 @@ class SessionData:
 
     # Game state for cognitive tests (Family Feud)
     current_answers: list[dict[str, Any]] = field(default_factory=list)
+
+    # Structured board document — source of truth for the board
+    board_document: dict = field(default_factory=create_empty_board)

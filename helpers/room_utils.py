@@ -25,12 +25,23 @@ def get_frontend_identity() -> str | None:
     """
     try:
         room = get_job_context().room
-        for identity, _participant in room.remote_participants.items():
-            if "teacher" in identity.lower() or "frontend" in identity.lower():
-                return identity
-        # Fallback: return the first remote participant that isn't the agent itself
         for identity in room.remote_participants:
-            return identity
+            if identity.lower() == "teacher-interface":
+                return identity
+
+        for identity in room.remote_participants:
+            lowered = identity.lower()
+            if "teacher" in lowered or "frontend" in lowered:
+                return identity
+
+        remote_ids = list(room.remote_participants.keys())
+        if len(remote_ids) == 1:
+            return remote_ids[0]
+
+        logger.warning(
+            "Could not uniquely identify frontend participant. Remote identities: %s",
+            remote_ids,
+        )
     except Exception as e:
         logger.warning(f"Could not find frontend participant: {e}")
     return None
