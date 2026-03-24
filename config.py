@@ -43,7 +43,7 @@ class STTConfig:
     fallback_models: tuple[str, ...] = field(
         default_factory=lambda: _csv_env(
             "LIVEKIT_STT_FALLBACK_MODELS",
-            ("assemblyai/universal-streaming-multilingual", "cartesia/ink-whisper"),
+            ("deepgram/nova-3", "cartesia/ink-whisper"),
         )
     )
 
@@ -54,7 +54,7 @@ class LLMConfig:
     fallback_models: tuple[str, ...] = field(
         default_factory=lambda: _csv_env(
             "LIVEKIT_LLM_FALLBACK_MODELS",
-            ("openai/gpt-4.1-mini","google/gemini-2.5-flash",),
+            ("google/gemini-2.5-flash",),
         )
     )
 
@@ -70,6 +70,11 @@ class TTSConfig:
             ("cartesia/sonic-3:9626c31c-bec5-4cca-baa8-f8ba9e84c8bc",),
         )
     )
+
+
+@dataclass(frozen=True)
+class TurnDetectionConfig:
+    model: str = field(default_factory=lambda: os.environ.get("LIVEKIT_TURN_DETECTION_MODEL", "english"))
 # @dataclass(frozen=True)
 # class TTSConfig:
 #     model: str = "elevenlabs/eleven_turbo_v2_5"
@@ -81,6 +86,7 @@ class ModelConfig:
     stt: STTConfig = field(default_factory=STTConfig)
     llm: LLMConfig = field(default_factory=LLMConfig)
     tts: TTSConfig = field(default_factory=TTSConfig)
+    turn_detection: TurnDetectionConfig = field(default_factory=TurnDetectionConfig)
 
 
 # Default model configuration instance

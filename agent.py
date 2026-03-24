@@ -22,7 +22,10 @@ from livekit.agents import (
     inference,
     room_io,
 )
+from livekit.agents.metrics import EOUMetrics, LLMMetrics, STTMetrics, TTSMetrics
+from livekit.agents.metrics.utils import log_metrics
 from livekit.plugins import noise_cancellation, silero
+from livekit.plugins.turn_detector.english import EnglishModel
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 from config import AGENT_NAME, models
@@ -45,6 +48,13 @@ server = AgentServer()
 def prewarm(proc: JobProcess):
     """Pre-load the Silero VAD model so first session starts faster."""
     proc.userdata["vad"] = silero.VAD.load()
+
+
+def build_turn_detector():
+    if models.turn_detection.model == "multilingual":
+        return MultilingualModel()
+
+    return EnglishModel()
 
 
 server.setup_fnc = prewarm
@@ -83,24 +93,37 @@ async def entrypoint(ctx: JobContext):
             language=models.stt.language,
             fallback=list(stt_fallback_descriptors(models.stt)),
             conn_options=APIConnectOptions(
-                max_retry=8,
-                retry_interval=2.0,
-                timeout=15.0,
+                max_retry=1,
+                retry_interval=0.5,
+                timeout=6.0,
             ),
         ),
         llm=llm.FallbackAdapter(
             llm=llm_chain,
+            attempt_timeout=2.5,
+            retry_interval=0.25,
         ),
         tts=inference.TTS(
             model=models.tts.model,
             voice=models.tts.voice,
             language=models.tts.language,
             fallback=list(models.tts.fallback_models),
+            conn_options=APIConnectOptions(
+                max_retry=1,
+                retry_interval=0.5,
+                timeout=6.0,
+            ),
         ),
-        turn_detection=MultilingualModel(),
+        turn_detection=build_turn_detector(),
         vad=ctx.proc.userdata["vad"],
         preemptive_generation=True,
     )
+
+    @session.on("metrics_collected")
+    def on_metrics_collected(ev) -> None:
+        metrics = ev.metrics
+        if isinstance(metrics, (EOUMetrics, LLMMetrics, STTMetrics, TTSMetrics)):
+            log_metrics(metrics, logger=logger)
 
     # 4. Start the agent
     await session.start(

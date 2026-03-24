@@ -1,8 +1,7 @@
 """
-PiTutorAgent — Dr. Bheemsen Arya simulation.
+PiTutorAgent — Dr. Kini simulation.
 
-Loads its system prompt from prompts/bmsc-tutor.md. Simulates Dr. Arya,
-Principal of BMSCE, discussing engineering education and Viksit Bharat 2047.
+Loads its system prompt from prompts/mit-tutor.md. Simulates Dr. Kini,
 Supports handoff to InterviewAgent for mock interviews.
 """
 
@@ -15,15 +14,15 @@ from config import PROMPTS_DIR
 from tools import (
     highlight_text,
     update_content,
-    start_cognitive_test,
-    update_team_score,
-    get_team_scores,
+    # start_cognitive_test,
+    # update_team_score,
+    # get_team_scores,
     write_to_board,
-    update_board_line,
+    # update_board_line,
     add_board_block,
     highlight_board_line,
-    insert_board_line,
-    delete_board_line,
+    # insert_board_line,
+    # delete_board_line,
     clear_board_content,
 )
 
@@ -39,8 +38,8 @@ def _load_prompt(filename: str) -> str:
 
 class PiTutorAgent(Agent):
     """
-    Dr. Arya simulation agent. Engages as the visionary Principal of BMSCE,
-    discussing engineering education, careers, and Viksit Bharat 2047.
+    Dr. Kini simulation agent. Engages as the visionary leader of manipal academy of higher education,
+    discussing  education, careers,
     """
     # JUNK: runs cognitive tests, and manages team scores.
 
@@ -57,11 +56,11 @@ class PiTutorAgent(Agent):
                 highlight_text,
                 update_content,
                 write_to_board,
-                update_board_line,
+                # update_board_line,
                 add_board_block,
                 highlight_board_line,
-                insert_board_line,
-                delete_board_line,
+                # insert_board_line,
+                # delete_board_line,
                 clear_board_content,
                 # start_cognitive_test,
                 # update_team_score,

@@ -25,12 +25,24 @@ class ModelFallbacksTests(unittest.TestCase):
     def test_llm_chain_keeps_primary_first(self) -> None:
         config = LLMConfig(
             model="openai/gpt-4.1-mini",
-            fallback_models=("google/gemini-2.5-flash", "openai/gpt-5-mini"),
+            fallback_models=("openai/gpt-4.1-mini", "google/gemini-2.5-flash", "openai/gpt-5-mini"),
         )
 
         self.assertEqual(
             llm_model_chain(config),
             ("openai/gpt-4.1-mini", "google/gemini-2.5-flash", "openai/gpt-5-mini"),
+        )
+
+    def test_stt_fallbacks_exclude_primary_duplicates(self) -> None:
+        config = STTConfig(
+            model="assemblyai/universal-streaming-multilingual",
+            language="en-IN",
+            fallback_models=("assemblyai/universal-streaming-multilingual", "deepgram/nova-3"),
+        )
+
+        self.assertEqual(
+            stt_fallback_descriptors(config),
+            ("deepgram/nova-3:en-IN",),
         )
 
     def test_tts_chain_preserves_primary_voice_descriptor(self) -> None:

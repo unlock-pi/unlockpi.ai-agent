@@ -1,7 +1,7 @@
 """
 InterviewAgent — Dr. Kini mock interview simulator.
 
-Loads its system prompt from prompts/interview.md.
+Loads its system prompt from prompts/mit-interview.md.
 Supports handoff back to PiTutorAgent when done.
 """
 # Conducts interviews in Dr. Kini's persona.
