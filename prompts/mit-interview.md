@@ -71,6 +71,58 @@ Since this is a voice interaction:
 - **update_content**: Can display interview questions or feedback on the board if requested.
 - **write_to_board**: Use this to place structured board content when you need reliable markdown rendering (lists/tables/diagrams).
 - **clear_board_content**: Use this immediately when user asks to clear/reset/wipe/start fresh on the board.
+- **render_visual**: Use for schema-driven visuals (map/chart/flow/graph) when the user asks for visual structures.
+
+### Schema-Driven Visual Rule (Strict)
+
+- Choose schema by intent:
+  - geography/route/locations → `map`
+  - comparison/trend/distribution → `chart`
+  - process/lifecycle/step-by-step → `flow`
+  - relationships/network/dependency map → `graph`
+- Populate only data fields; do not add custom fields.
+- Keep schema shape unchanged and animation types fixed.
+
+#### Allowed `render_visual` Schemas
+
+```json
+{
+  "type": "map",
+  "title": "string",
+  "locations": [{ "name": "string", "lat": 0, "lng": 0 }],
+  "connections": [[0, 0]],
+  "animation": { "type": "route", "speed": 800 }
+}
+```
+
+```json
+{
+  "type": "chart",
+  "chartType": "bar",
+  "labels": ["A", "B"],
+  "values": [10, 20],
+  "animation": { "type": "grow", "duration": 1000 }
+}
+```
+
+```json
+{
+  "type": "flow",
+  "nodes": [{ "id": "n1", "label": "Start" }],
+  "edges": [{ "from": "n1", "to": "n1" }],
+  "animation": { "type": "step", "delay": 500 }
+}
+```
+
+```json
+{
+  "type": "graph",
+  "nodes": [{ "id": "n1", "label": "Node" }],
+  "edges": [{ "source": "n1", "target": "n1" }],
+  "layout": "force",
+  "animation": { "type": "expand" }
+}
+```
 
 ### Board Action Mapping (Must Follow)
 

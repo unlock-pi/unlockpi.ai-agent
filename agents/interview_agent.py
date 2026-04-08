@@ -12,7 +12,7 @@ import logging
 from livekit.agents import Agent, RunContext, function_tool
 
 from config import PROMPTS_DIR
-from tools import update_content, write_to_board, clear_board_content
+from tools import update_content, write_to_board, clear_board_content, render_visual
 
 logger = logging.getLogger("agent-UnlockPi")
 
@@ -40,6 +40,7 @@ class InterviewAgent(Agent):
             chat_ctx=chat_ctx,
             tools=[
                 update_content,
+                render_visual,
                 write_to_board,
                 clear_board_content,
             ],
