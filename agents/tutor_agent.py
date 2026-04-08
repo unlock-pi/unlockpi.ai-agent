@@ -14,6 +14,7 @@ from config import PROMPTS_DIR
 from tools import (
     highlight_text,
     update_content,
+    render_visual,
     # start_cognitive_test,
     # update_team_score,
     # get_team_scores,
@@ -55,6 +56,7 @@ class PiTutorAgent(Agent):
             tools=[
                 highlight_text,
                 update_content,
+                render_visual,
                 write_to_board,
                 # update_board_line,
                 add_board_block,
