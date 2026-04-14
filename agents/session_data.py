@@ -24,3 +24,17 @@ class SessionData:
 
     # Structured board document — source of truth for the board
     board_document: dict = field(default_factory=create_empty_board)
+
+    # Teaching session context loaded from Supabase (optional)
+    session_title: str | None = None
+    session_topic: str | None = None
+    session_goals: str | None = None
+    session_structure: str | None = None
+
+    # Runtime lesson tracking
+    lesson_phase_order: list[str] = field(
+        default_factory=lambda: ["warmup", "concept", "practice", "exit"]
+    )
+    current_phase_index: int = 0
+    lesson_goal_checklist: list[str] = field(default_factory=list)
+    covered_goals: list[str] = field(default_factory=list)

@@ -10,8 +10,11 @@ This is the slim orchestration layer.  All business logic lives in:
 """
 
 import logging
+import json
+import os
 from livekit.agents import llm
 from livekit import rtc
+from supabase import create_client, Client
 from livekit.agents import (
     APIConnectOptions,
     AgentSession,
@@ -30,7 +33,6 @@ from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 from config import AGENT_NAME, models
 from agents import PiTutorAgent, SessionData
-from helpers.db import create_db_pool, close_db_pool
 from helpers.model_fallbacks import (
     describe_fallback_chains,
     llm_model_chain,
@@ -66,17 +68,74 @@ async def entrypoint(ctx: JobContext):
     Per-session entry point.
     Sets up DB → session config → agent → room connection → cleanup.
     """
-    # 1. Database
-    db_pool = await create_db_pool()
+    # 1. Shared session state (accessible in tools via context.userdata)
+    session_data = SessionData()
 
-    # 2. Shared session state (accessible in tools via context.userdata)
-    session_data = SessionData(db_pool=db_pool)
+    metadata_json = ""
+    try:
+        metadata_json = getattr(ctx.job, "metadata", "") or ""
+    except Exception:
+        metadata_json = ""
 
-    async def on_job_shutdown(reason: str) -> None:
-        logger.info("Job shutting down", extra={"shutdown_reason": reason})
-        await close_db_pool(db_pool)
+    if not metadata_json:
+        try:
+            metadata_json = getattr(ctx._info.accept_arguments, "metadata", "") or ""
+        except Exception:
+            metadata_json = ""
 
-    ctx.add_shutdown_callback(on_job_shutdown)
+    session_id: str | None = None
+    if metadata_json:
+        try:
+            parsed_metadata = json.loads(metadata_json)
+            if isinstance(parsed_metadata, dict):
+                raw_session_id = parsed_metadata.get("session_id")
+                if isinstance(raw_session_id, str) and raw_session_id.strip():
+                    session_id = raw_session_id.strip()
+        except Exception as err:
+            logger.warning("Failed to parse job metadata JSON: %s", err)
+
+    if not session_id:
+        logger.info("No session_id found in job metadata; skipping session context load")
+
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    supabase_client: Client | None = None
+
+    if supabase_url and supabase_service_role_key:
+        try:
+            supabase_client = create_client(supabase_url, supabase_service_role_key)
+        except Exception as err:
+            logger.warning("Failed to initialize Supabase client: %s", err)
+    else:
+        logger.warning("Supabase client unavailable; check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY")
+
+    if session_id and supabase_client:
+        try:
+            response = (
+                supabase_client.table("teaching_sessions")
+                .select("title,topic,learning_goals,lesson_structure")
+                .eq("id", session_id)
+                .single()
+                .execute()
+            )
+            data = response.data if response and response.data else {}
+
+            session_data.session_title = data.get("title")
+            session_data.session_topic = data.get("topic")
+            session_data.session_goals = data.get("learning_goals") or data.get("goals")
+            session_data.session_structure = data.get("lesson_structure") or data.get("structure")
+
+            if any([
+                session_data.session_title,
+                session_data.session_topic,
+                session_data.session_goals,
+                session_data.session_structure,
+            ]):
+                logger.info("Loaded session context for session_id=%s", session_id)
+            else:
+                logger.info("No teaching session context found for session_id=%s", session_id)
+        except Exception as err:
+            logger.warning("Failed to load teaching session context for session_id=%s: %s", session_id, err)
 
     llm_chain = [
         inference.LLM(model=model_name)
