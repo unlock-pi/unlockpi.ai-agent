@@ -24,3 +24,9 @@ class SessionData:
 
     # Structured board document — source of truth for the board
     board_document: dict = field(default_factory=create_empty_board)
+
+    # Teaching session context loaded from Supabase (optional)
+    session_title: str | None = None
+    session_topic: str | None = None
+    session_goals: str | None = None
+    session_structure: str | None = None

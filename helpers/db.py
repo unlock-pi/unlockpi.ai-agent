@@ -15,7 +15,9 @@ logger = logging.getLogger("agent-UnlockPi")
 async def create_db_pool() -> Optional[asyncpg.Pool]:
     """Create and return an asyncpg connection pool, or None on failure."""
     if not NEONDB_URL:
-        logger.warning("NEONDB_API_KEY not set — database features will be unavailable.")
+        logger.warning(
+            "No DB URL configured (NEONDB_URL / DATABASE_URL / SUPABASE_DB_URL) — database features will be unavailable."
+        )
         return None
     try:
         pool = await asyncpg.create_pool(NEONDB_URL)

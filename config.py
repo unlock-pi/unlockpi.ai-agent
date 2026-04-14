@@ -24,7 +24,12 @@ def _csv_env(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
 # ---------------------------------------------------------------------------
 # Environment
 # ---------------------------------------------------------------------------
-NEONDB_URL: str | None = os.environ.get("NEONDB_API_KEY")
+NEONDB_URL: str | None = (
+    os.environ.get("NEONDB_URL")
+    or os.environ.get("DATABASE_URL")
+    or os.environ.get("SUPABASE_DB_URL")
+    or os.environ.get("NEONDB_API_KEY")
+)
 
 
 # ---------------------------------------------------------------------------

@@ -49,9 +49,10 @@ class PiTutorAgent(Agent):
         from agents.interview_agent import InterviewAgent  # noqa: F811
 
         self._interview_agent_cls = InterviewAgent
+        self._base_instructions = _load_prompt("mit-tutor.md")
 
         super().__init__(
-            instructions=_load_prompt("mit-tutor.md"),
+            instructions=self._base_instructions,
             chat_ctx=chat_ctx,
             tools=[
                 highlight_text,
@@ -72,6 +73,22 @@ class PiTutorAgent(Agent):
 
     async def on_enter(self):
         """Called when the agent joins. Sends a short greeting."""
+        session_data = self.session.userdata
+        title = getattr(session_data, "session_title", None)
+        topic = getattr(session_data, "session_topic", None)
+        goals = getattr(session_data, "session_goals", None)
+        structure = getattr(session_data, "session_structure", None)
+
+        if any([title, topic, goals, structure]):
+            context_block = (
+                "## Current Session Context\n"
+                f"Title: {title or ''}\n"
+                f"Topic: {topic or ''}\n"
+                f"Goals: {goals or ''}\n"
+                f"Structure: {structure or ''}"
+            )
+            await self.update_instructions(f"{self._base_instructions}\n\n{context_block}")
+
         await self.session.generate_reply(
             instructions="Greet the user, keep it short.",
             allow_interruptions=True,
